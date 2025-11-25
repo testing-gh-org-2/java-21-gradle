@@ -1,0 +1,44 @@
+name: Generate SBOM for Gradle Project (cdxgen)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  sbom:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install CycloneDX cdxgen
+        run: npm install --global @cyclonedx/cdxgen --no-audit --no-fund
+
+      - name: Create output directory
+        run: mkdir -p artifacts
+
+      - name: Generate SBOM from Gradle (using gradle.lockfile)
+        run: |
+          cdxgen \
+            -t gradle \
+            --no-install-deps \
+            -o artifacts/cdxgen.json \
+            .
+
+      - name: List generated SBOM
+        run: ls -lah artifacts/
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: cdxgen-sbom
+          path: artifacts/cdxgen.json
